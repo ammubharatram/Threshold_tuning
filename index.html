@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+<!-- Example based on http://bl.ocks.org/mbostock/3887118 -->
+<!-- Tooltip example from http://www.d3noob.org/2013/01/adding-tooltips-to-d3js-graph.html -->
+<!-- Coding style based on http://gist.github.com/mbostock/5977197 -->
+
+<style>
+body {
+  font: 11px sans-serif;
+  background-color: darkgrey; 
+  position: absolute;
+      left: 350px;
+      top: 100px;
+      padding: 0;
+      margin: 0;
+}
+
+.canvas {
+      position: absolute;
+      left: 550px;
+      top: 100px;
+      padding: 0;
+      margin: 0;
+  }
+
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+h1 {
+  text-align: justify;
+}
+.dot {
+  stroke: #000;
+}
+
+.tooltip {
+  position: absolute;
+  background-color: rgba(100,100,200,1) ;
+  padding: 10px;
+  border: 1px solid #ddd;
+
+  font-family: Arial;
+  font-size: 13px;
+
+  transition: opacity 300ms linear;
+  -moz-transition: opacity 300ms linear;
+  -webkit-transition: opacity 300ms linear;
+
+  transition-delay: 300ms;
+  -moz-transition-delay : 300ms;
+  -webkit-transition-delay: 300ms;
+
+  -moz-box-shadow: 4px 4px 12px rgba(0,0,0,.5);
+  -webkit-box-shadow: 4px 4px 12px rgba(0,0,0,.5);
+  box-shadow: 4px 4px 12px rgba(0,0,0,.5);
+
+  -moz-border-radius: 15px;
+  border-radius: 15px;
+}
+</style>
+<body>
+
+<h1> Threshold Tuning <br/> </h1>
+      <div class="row align-items-center">
+      <div class="col-sm-2" ><p id="value-step"></p></div>
+      <div class="col-sm"><div id="slider-step"></div>
+      <div class="col-sm-2" ><p id="value-step2"></p></div>
+      <div class="col-sm"><div id="slider-step2"></div></div>
+<script src="https://d3js.org/d3.v5.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"> </script>
+<script src="https://unpkg.com/d3-simple-slider"></script>
+<script type= "text/javascript" > 
+var svg = d3.select('body')
+  .append('svg')
+    .attr('width', 1020)
+    .attr('height', 1000);
+
+
+// create margins & dimensions
+var margin = {top: 20, right: 20, bottom: 100, left: 100};
+var graphWidth = 700 - margin.left - margin.right;
+var graphHeight = 700 - margin.top - margin.bottom;
+
+
+var graph = svg.append('g')
+  .attr('width', graphWidth)
+  .attr('height', graphHeight)
+  .attr('transform', `translate(${margin.left}, ${margin.top})`);
+
+
+// create axes groups  
+var xAxisGroup = graph.append('g')
+  .attr('transform', `translate(0, ${graphHeight})`)
+
+const yAxisGroup = graph.append('g');
+
+// load data
+ d3.csv("INT90.FI_for_viz.csv").then( data => {
+  // select the svg container first
+  
+
+
+const y = d3.scaleLinear()
+  .domain([0, d3.max(data, d => d["pred_rf.SAR"])])
+  .range([graphHeight, 0]);
+  
+const x = d3.scaleLinear()
+  .domain([0, d3.max(data, d => d.RATIO_NUM_MT103_12M)])
+  .range([0, graphWidth])
+  ;
+
+var xValue = function(d) { return d.RATIO_NUM_MT103_12M;},
+    xMap = function(d) { return x(xValue(d));},
+    yValue = function(d) { return d["pred_rf.SAR"];}, 
+    yMap = function(d) { return y(yValue(d));};
+
+
+
+
+ // create & call axesit
+ const xAxis = d3.axisBottom(x).scale(x).ticks(10);
+ const yAxis = d3.axisLeft(y)
+   .ticks(10)
+   .tickFormat(d => d  );
+
+ xAxisGroup.call(xAxis);
+ yAxisGroup.call(yAxis);
+
+ const xa = xAxisGroup.selectAll('text')
+   .attr('fill', 'black')
+   .attr('transform', 'rotate(-40)')
+   .attr('text-anchor', 'end')
+   
+ xa.select('path').attr("marker-end", "url(#arrowhead)");
+ yAxisGroup.selectAll('text')
+   .attr('fill', 'black')
+
+// console.log(xValue);
+// console.log(yValue(data));
+
+// setup fill color
+var cValue = function(d) { return d.SAR;};
+
+const color = d3.scaleOrdinal(["green","red"])
+                 .domain(data.map(d=>d.SAR));
+
+//console.log(data.map(d=>d.SAR));
+
+//  console.log(data);
+ // update colour scale domain
+
+ const legendGroup = svg.append('g')
+  .attr('transform', `translate(${graphWidth + 180}, 10)`)
+ 
+//var color = d3.scaleOrdinal(d3.schemeCategory10);
+/* color = d3.scaleOrdinal();
+    .range(["red", "green"]); */
+
+
+
+
+// add the tooltip area to the webpage
+var tooltip = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 12);
+  // change string (from CSV) into number format
+  data.forEach(function(d) {
+    d.RATIO_NUM_MT103_12M = +d.RATIO_NUM_MT103_12M;
+    d["pred_rf.SAR"] = +d["pred_rf.SAR"];
+//    console.log(d);
+  });
+
+  // don't want dots overlapping axis, so add in buffer to data domain
+  x.domain([d3.min(data, xValue)-10, d3.max(data, xValue)]);
+  y.domain([d3.min(data, yValue)-0.03, d3.max(data, yValue)]);
+
+  
+
+  // draw dots
+
+  const dots = graph.selectAll('dot')
+  .data(data);
+
+      dots 
+      .enter().append("circle")
+      .attr("class", "dot")
+      .attr("r", 3.5)
+      .attr("cx", d=>x(d.RATIO_NUM_MT103_12M))
+      .attr("cy", d=>y(d["pred_rf.SAR"]))
+      .style("fill", function(d) { return color(cValue(d));}) 
+      .on("mouseover", function(d) {
+          tooltip.transition()
+               .duration(200)
+               .style("opacity", 0.9);
+          tooltip.html( `${d["SAR"]} <br/>(${xValue(d)}, ${yValue(d)})`)
+               .style("left", (d3.event.pageX -305) + "px")
+               .style("top", (d3.event.pageY -68) + "px");
+      })
+      .on("mouseout", function(d) {
+          tooltip.transition()
+               .duration(500)
+               .style("opacity", 0);
+      });
+
+  // draw legend
+  var legend = d3.legendColor()
+                 .shapePadding(10)
+                 .scale(color);
+
+  legendGroup.call(legend);
+  legendGroup.selectAll('text').attr('fill', 'black');
+
+ /*  // draw legend colored rectangles
+  legend.append("rect")
+      .attr("x", graphWidth - 18)
+      .attr("width", 18)
+      .attr("height", 18)
+      .style("fill", color);
+
+  // draw legend text
+  legend.append("text")
+      .attr("x", graphWidth - 24)S
+      .attr("y", 9)
+      .attr("dy", ".35em")
+      .style("text-anchor", "end")
+      .text(function(d) { return d;}) */
+  
+
+// text label for the x axis
+svg.append("text")   
+ .attr("transform",
+            "translate(" + (graphWidth/1.5  ) + " ," + 
+                           (graphHeight + margin.top +50) + ")")         
+ .style("text-anchor", "middle")
+ .attr("dy", "0em")
+ .html(" &#8594; The value of RATIO_NUM_MT103_12M  ")
+
+ 
+ 
+// text label for the y axis
+svg.append("text")
+.attr("transform", "rotate(-90)")
+.attr("transform",
+            "translate(" + (- 110) + " ," + 
+                           (margin.top + 80) + ")") 
+.attr("y", margin.left)
+.attr("x", (graphHeight/4))
+.attr("x", (graphHeight/4))
+.attr("dy", "1em")
+.style("text-anchor", "middle")
+.html(" Risk score &#8593;")
+;  
+
+
+xAxisGroup.call(xAxis);
+yAxisGroup.call(yAxis);
+
+/* ########## SLIDER ######################### */
+var slider_input=0;
+
+
+
+// Current Threshold is at 30//
+//Slider_Bins to show
+/* var slider_bins = (data.map(item => item.RATIO_NUM_MT103_12M));
+
+console.log(slider_bins); */
+d3.select('p#value-step').text(`Positive (+) RATIO_NUM_MT103_12M :   30`); //default value
+d3.select('p#value-step2').text(`Negative (-) RATIO_NUM_MT103_12M :   -30`); //default value
+//default position of threshold1 : +30
+var points = [
+  [x(data[9-1].RATIO_NUM_MT103_12M), 800],
+  [x(data[9-1].RATIO_NUM_MT103_12M), -800],
+  ];
+
+  var points2 = [
+  [x(data[30-1].RATIO_NUM_MT103_12M), 800],
+  [x(data[30-1].RATIO_NUM_MT103_12M), -800],
+  ];
+
+console.log(data.map( d=> d.RATIO_NUM_MT103_12M));
+
+// Step1
+var sliderStep = d3.sliderBottom()
+.min(d3.min(data, xValue))
+.max(d3.max(data, xValue))
+.tickFormat(d3.format('.1f'))
+.width(300)
+.ticks(5)
+.step(1)
+.default(4)
+.on('onchange', val => {
+  //test();
+  d3.select('p#value-step').text(`Positive (+) RATIO_NUM_MT103_12M :   ${d3.format('.2f')(val)}`);
+  //slider_input = 6;
+  slider_input = val; 
+  //console.log(slider_input);
+  points = [
+    [x(val), 800],
+    [x(val), -800],
+    ];
+  path1.attr('d', threshold1(points))
+  });
+
+/* function test(){
+  console.log("59565416");
+  console.log(slider_input);
+} 
+ */
+/* function show_results(results) {
+  // We want this to show the "results" from the callback function.
+  alert(slider_input);
+ } 
+
+//console.log(slider_input);
+
+*/
+//console.log(d3.format('.2f')(sliderStep.value()));
+
+var gStep = d3
+.select('div#slider-step')
+.append('svg')
+.attr('width', 500)
+.attr('height', 100)
+.append('g')
+.attr('transform', 'translate(30,30)')
+.text(sliderStep.value());
+
+gStep.call(sliderStep);
+;
+
+
+
+// Step2
+var sliderStep2 = d3.sliderBottom()
+.min(d3.min(data, xValue))
+.max(d3.max(data, xValue))
+.tickFormat(d3.format('.1f'))
+.width(300)
+.ticks(5)
+.step(1)
+.default(4)
+.on('onchange', val => {
+  //test();
+  d3.select('p#value-step2').text(`Negative (-)   RATIO_NUM_MT103_12M :    ${d3.format('.2f')(val)}`);
+  //slider_input = 6;
+  slider_input = val; 
+  //console.log(slider_input);
+  points2 = [
+    [x(val), 800],
+    [x(val), -800],
+    ];
+  path2.attr('d', threshold1(points2))
+  //tp rate
+  var tp_rate = data[slider_input].Fraction_SAR;
+  
+  //fp rate
+  if(data[slider_input].Count_nonSAR != 0 ) {var fp_rate = data[slider_input].Count_nonSAR/ (data[slider_input].Count_SAR + data[slider_input].Count_nonSAR)
+  } else {var fp_rate =0};
+  //num alerts
+  var num_alerts = data[slider_input].Count_RATIO_NUM_MT103_12M;
+  d3.select("#first").html(`True Positive Rate   : ${d3.format('.2f')(tp_rate)}% <br/>`);
+  d3.select("#second").html(`False Positive Rate   : ${d3.format(',.2%')(fp_rate)}  <br/>`);
+  d3.select("#third").html(`Number of Alerts  : ${(num_alerts)}  <br/>`);
+});
+
+
+var gStep2 = d3
+.select('div#slider-step2')
+.append('svg')
+.attr('width', 500)
+.attr('height', 100)
+.append('g')
+.attr('transform', 'translate(30,30)')
+.text(sliderStep2.value());
+
+gStep2.call(sliderStep2);
+;
+
+
+
+//Threshold line
+// d3 line path generator
+const threshold1 = d3.line()
+const threshold2 = d3.line() 
+// line path element
+const path1 = graph.append('path');   // create axes
+const path2 = graph.append('path');   // create axes
+
+console.log(sliderStep.value());
+console.log(document.getElementById("value-step").innerHTML);
+
+// update path data
+path1.attr('fill', 'none')
+.transition().duration(2500)  
+  .attr('stroke', 'red')
+  .attr('stroke-width', '2')
+  .attr('d', threshold1(points))
+  ; 
+
+// update path data
+path2.attr('fill', 'none')
+.transition().duration(2500)  
+  .attr('stroke', 'blue')
+  .attr('stroke-width', '2')
+  .attr('d', threshold2(points2))
+  ; 
+});
+</script>
+
+
+</body>
+</html>
