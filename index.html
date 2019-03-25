@@ -12,20 +12,45 @@
 body {
   font: 11px sans-serif;
   background-color: darkgrey; 
-  position: absolute;
-      left: 350px;
-      top: 100px;
-      padding: 0;
-      margin: 0;
+  
 }
 
 .canvas {
       position: absolute;
-      left: 550px;
-      top: 100px;
+      left: 450px;
+      top: 50px;
       padding: 0;
       margin: 0;
   }
+
+  .row-align-items-center {
+      position: absolute;
+      left: 1250px;
+      top: 50px;
+      padding: 0;
+      margin: 0;
+  }
+  .row-align-items-center2 {
+      position: absolute;
+      left:  50px;
+      top: 50px;
+      padding: 0;
+      margin: 0;
+  }
+
+  .confusion {
+      position: absolute;
+      left:  1250px;
+      top: 350px;
+      padding: 0;
+      margin: 0
+      
+  }
+  #first, #second,#third,#fourth,#fifth,#sar,#no_sar {
+    font-size:  20px;
+    
+  }
+
 
 .axis line {
   fill: none;
@@ -66,18 +91,34 @@ h1 {
 }
 </style>
 <body>
+  <div class="canvas">
 
-<h1> Threshold Tuning <br/> </h1>
-      <div class="row align-items-center">
+  </div>
+<h2> Threshold Tuning <br/> </h2>
+      <div class="row-align-items-center">
       <div class="col-sm-2" ><p id="value-step"></p></div>
-      <div class="col-sm"><div id="slider-step"></div>
+      <div class="col-sm"><div id="slider-step"></div></div> </div>
+      <div class="row-align-items-center2">
       <div class="col-sm-2" ><p id="value-step2"></p></div>
-      <div class="col-sm"><div id="slider-step2"></div></div>
+      <div class="col-sm"><div id="slider-step2"></div> </div> </div>
+<div class="confusion">
+<p id="sar">Number of SAR's   :  <br/></p> 
+<p id="no_sar"> Number of Non-SAR's : <br/></p> 
+<p id="first">Sensitivity/True Positive Rate   : 0% <br/></p> 
+<p id="second"> Specificity/ True Negative Rate : 0%<br/></p> 
+<p id="third"> Precision    :  0%<br/></p>
+<p id="fourth"> F1-score     :  0 % <br/></p>
+<p id="fifth"> Number of Alerts     :  0 % <br/></p>
+
+</div>
 <script src="https://d3js.org/d3.v5.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"> </script>
 <script src="https://unpkg.com/d3-simple-slider"></script>
 <script type= "text/javascript" > 
-var svg = d3.select('body')
+
+
+ // select the svg container first
+var svg = d3.select('.canvas')
   .append('svg')
     .attr('width', 1020)
     .attr('height', 1000);
@@ -103,8 +144,157 @@ const yAxisGroup = graph.append('g');
 
 // load data
  d3.csv("INT90.FI_for_viz.csv").then( data => {
-  // select the svg container first
+ // Convert numeric variables to numeric 
+ data.forEach(function(d) {
+    d.RATIO_NUM_MT103_12M    = +d.RATIO_NUM_MT103_12M;
+    d["pred_rf.SAR"] = +d["pred_rf.SAR"];
+  });
+
+
+  console.log(data[0]);
+// $$$$$$$ Definitions - global fns for rate of alerts 
+
+//tp_rate
+
+//var indices = slider_bins.every((element,index)=>{return index; });
+function tp_count(left,right) {
+  var count_tp=0;
+  for (var  i = 0; i <  data.length; i++) {
+ 
+if (data[i].RATIO_NUM_MT103_12M <=left || data[i].RATIO_NUM_MT103_12M >=right){
+
+   if(data[i].SAR === 'SAR' &&  data[i]["pred_rf.SAR"] >=0.5) {
+    count_tp +=1;
+    
+       }
+      }
+}
+return count_tp;
+
+};
+
+//fp_rate
+
+//var indices = slider_bins.every((element,index)=>{return index; });
+function fp_count(left,right) {
+  var count_fp=0;
+  for (var  i = 0; i <  data.length; i++) {
+ 
+if (data[i].RATIO_NUM_MT103_12M <=left || data[i].RATIO_NUM_MT103_12M >=right){
+
+   if(data[i].SAR === 'No_SAR' &&  data[i]["pred_rf.SAR"] >=0.5) {
+    count_fp +=1;
+    
+       }
+      }
+}
+return count_fp;
+
+};
+
+
+//tn_rate
+
+function tn_count(left,right) {
+  var count_tn = 0;
+  for(var i = 0; i < data.length; i++) {
+   if (data[i].RATIO_NUM_MT103_12M <=left || data[i].RATIO_NUM_MT103_12M >=right){
   
+   if(data[i].SAR === 'SAR' &&  data[i]["pred_rf.SAR"] <0.5) {
+    count_tn +=1;
+    
+       }
+    
+      }
+     
+}
+return count_tn;
+};
+
+
+//fn_rate
+
+function fn_count(left,right){
+  var count_fn = 0;
+  for(var i = 0; i < data.length; i++) {
+   if (data[i].RATIO_NUM_MT103_12M <=left || data[i].RATIO_NUM_MT103_12M >=right){
+  
+   if(data[i].SAR === 'SAR' &&  data[i]["pred_rf.SAR"] <0.5) {
+    count_fn +=1;
+    
+       }
+    
+      }
+     
+}
+return count_fn;
+};
+
+//Number of Alerts within the zone
+
+function alerts_count(left,right){
+  var num_alerts=0;
+  for(var i = 0; i < data.length; i++) {
+    if (data[i].RATIO_NUM_MT103_12M <=left || data[i].RATIO_NUM_MT103_12M >=right){
+      num_alerts+= 1;
+} 
+} 
+return num_alerts;
+};
+
+
+// Count_SAR
+function count_sar(left,right) {
+  var num_sar = 0;
+  for(var i = 0; i < data.length; i++) {
+    if (data[i].RATIO_NUM_MT103_12M <=left || data[i].RATIO_NUM_MT103_12M >=right){
+      if(data[i].SAR === 'SAR') {
+    num_sar +=1;
+    
+       }
+    
+      }
+     
+} return num_sar;
+}
+
+// Count_nonSAR
+function count_no_sar(left,right) {
+  var num_non_sar = 0;
+  for(var i = 0; i < data.length; i++) {
+    if (data[i].RATIO_NUM_MT103_12M <=left || data[i].RATIO_NUM_MT103_12M >=right){
+      if(data[i].SAR === 'No_SAR') {
+    num_non_sar +=1;
+    
+       }
+    
+      }
+     
+  } return num_non_sar;
+}
+
+
+console.log(data.length);
+
+console.log(data[0].RATIO_NUM_MT103_12M );
+console.log(data[data.length-1].RATIO_NUM_MT103_12M );
+console.log(alerts_count(-100,617));
+
+//test global functions 
+//console.log(count_fp);
+//console.log(data[1]["pred_rf.SAR"]);
+//console.log(slider_bins.indexOf(-52.48));
+console.log(fp_count(-30,100));
+console.log(tp_count(-30,100));
+console.log(fn_count(-30,100));
+console.log(tn_count(-30,100));
+console.log(data[29]);
+console.log(data.length);
+
+
+
+
+// End of -- $$$$$$$ Definitions - global fns for rate of alerts 
 
 
 const y = d3.scaleLinear()
@@ -112,7 +302,7 @@ const y = d3.scaleLinear()
   .range([graphHeight, 0]);
   
 const x = d3.scaleLinear()
-  .domain([0, d3.max(data, d => d.RATIO_NUM_MT103_12M)])
+  .domain([d3.min(data, d => d.RATIO_NUM_MT103_12M), d3.max(data, d => d.RATIO_NUM_MT103_12M)])
   .range([0, graphWidth])
   ;
 
@@ -157,7 +347,7 @@ const color = d3.scaleOrdinal(["green","red"])
  // update colour scale domain
 
  const legendGroup = svg.append('g')
-  .attr('transform', `translate(${graphWidth + 180}, 10)`)
+  .attr('transform', `translate(${graphWidth -180}, 10)`)
  
 //var color = d3.scaleOrdinal(d3.schemeCategory10);
 /* color = d3.scaleOrdinal();
@@ -263,51 +453,80 @@ xAxisGroup.call(xAxis);
 yAxisGroup.call(yAxis);
 
 /* ########## SLIDER ######################### */
-var slider_input=0;
+var slider_input1= 30;
 
 
 
 // Current Threshold is at 30//
 //Slider_Bins to show
-/* var slider_bins = (data.map(item => item.RATIO_NUM_MT103_12M));
 
-console.log(slider_bins); */
+
+//console.log(slider_bins); 
 d3.select('p#value-step').text(`Positive (+) RATIO_NUM_MT103_12M :   30`); //default value
 d3.select('p#value-step2').text(`Negative (-) RATIO_NUM_MT103_12M :   -30`); //default value
 //default position of threshold1 : +30
 var points = [
-  [x(data[9-1].RATIO_NUM_MT103_12M), 800],
-  [x(data[9-1].RATIO_NUM_MT103_12M), -800],
+  [x(30), 800],
+  [x(30), -800],
   ];
 
   var points2 = [
-  [x(data[30-1].RATIO_NUM_MT103_12M), 800],
-  [x(data[30-1].RATIO_NUM_MT103_12M), -800],
+  [x(-30), 800],
+  [x(-30), -800],
   ];
 
 console.log(data.map( d=> d.RATIO_NUM_MT103_12M));
 
 // Step1
 var sliderStep = d3.sliderBottom()
-.min(d3.min(data, xValue))
-.max(d3.max(data, xValue))
+.min(d3.min(data, xValue)-2)
+.max(d3.max(data, xValue)+2)
 .tickFormat(d3.format('.1f'))
 .width(300)
 .ticks(5)
 .step(1)
-.default(4)
+.default(30)
 .on('onchange', val => {
   //test();
   d3.select('p#value-step').text(`Positive (+) RATIO_NUM_MT103_12M :   ${d3.format('.2f')(val)}`);
   //slider_input = 6;
-  slider_input = val; 
+  slider_input1 = val; 
   //console.log(slider_input);
   points = [
     [x(val), 800],
     [x(val), -800],
     ];
   path1.attr('d', threshold1(points))
+  //TP rate
+  var tp_rate = tp_count(slider_input2,val)/(tp_count(slider_input2,val) + fn_count(slider_input2,val));
+  d3.select("#first").html(`Sensitivity/True Positive Rate   : ${d3.format('.2%')(tp_rate)} <br/>`);
+  
+  // TN rate
+  var tn_rate = tn_count(slider_input2,val)/(tn_count(slider_input2,val) + fp_count(slider_input2,val));
+  d3.select("#second").html(`Specificity/True Negative Rate   : ${d3.format('.2%')(tn_rate)} <br/>`);
+
+  // Precision
+  var precision = tp_count(slider_input2,val)/(tp_count(slider_input2,val) + fp_count(slider_input2,val));
+  d3.select("#third").html(`Precision   : ${d3.format('.2%')(precision)} <br/>`);
+
+  // F1-score
+  var f1_score = 2* (tp_count(slider_input2,val))/(2* (tp_count(slider_input2,val)) +  fp_count(slider_input2,val) + fn_count(slider_input2,val));
+  d3.select("#fourth").html(`F1-score   : ${d3.format('.2%')(f1_score)} <br/>`);
+
+  //Number of Alerts
+  var number_alerts1 = alerts_count(slider_input2,val);
+  d3.select("#fifth").html(`Number of Alerts   : ${(number_alerts1)} <br/>`);
+  
+  //Number of SARs
+   var num_sar = count_sar(slider_input2,val);
+  d3.select("#sar").html(`Number of SAR's  : ${(num_sar)} <br/>`);
+   //Number of SARs
+   var num_no_sar = count_no_sar(slider_input2,val);
+  d3.select("#no_sar").html(`Number of Non-SAR's  : ${(num_no_sar)} <br/>`);
+
   });
+
+  console.log(d3.max(data, xValue));
 
 /* function test(){
   console.log("59565416");
@@ -336,42 +555,59 @@ var gStep = d3
 gStep.call(sliderStep);
 ;
 
-
+var slider_input2= -30;
 
 // Step2
 var sliderStep2 = d3.sliderBottom()
-.min(d3.min(data, xValue))
-.max(d3.max(data, xValue))
+.min(d3.min(data, xValue)-2)
+.max(d3.max(data, xValue)+2)
 .tickFormat(d3.format('.1f'))
 .width(300)
 .ticks(5)
 .step(1)
-.default(4)
+.default(-30)
 .on('onchange', val => {
   //test();
   d3.select('p#value-step2').text(`Negative (-)   RATIO_NUM_MT103_12M :    ${d3.format('.2f')(val)}`);
   //slider_input = 6;
-  slider_input = val; 
+  slider_input2 = val; 
   //console.log(slider_input);
   points2 = [
     [x(val), 800],
     [x(val), -800],
     ];
   path2.attr('d', threshold1(points2))
-  //tp rate
-  var tp_rate = data[slider_input].Fraction_SAR;
+
+  //TP rate
+  var tp_rate = tp_count(val,slider_input1)/(tp_count(val,slider_input1) + fn_count(val,slider_input1));
+  d3.select("#first").html(`Sensitivity/True Positive Rate   : ${d3.format('.2%')(tp_rate)} <br/>`);
   
-  //fp rate
-  if(data[slider_input].Count_nonSAR != 0 ) {var fp_rate = data[slider_input].Count_nonSAR/ (data[slider_input].Count_SAR + data[slider_input].Count_nonSAR)
-  } else {var fp_rate =0};
-  //num alerts
-  var num_alerts = data[slider_input].Count_RATIO_NUM_MT103_12M;
-  d3.select("#first").html(`True Positive Rate   : ${d3.format('.2f')(tp_rate)}% <br/>`);
-  d3.select("#second").html(`False Positive Rate   : ${d3.format(',.2%')(fp_rate)}  <br/>`);
-  d3.select("#third").html(`Number of Alerts  : ${(num_alerts)}  <br/>`);
-});
+  // TN rate
+  var tn_rate = tn_count(val,slider_input1)/(tn_count(val,slider_input1) + fp_count(val,slider_input1));
+  d3.select("#second").html(`Specificity/True Negative Rate   : ${d3.format('.2%')(tn_rate)} <br/>`);
 
+  // Precision
+  var precision = tp_count(val,slider_input1)/(tp_count(val,slider_input1) + fp_count(val,slider_input1));
+  d3.select("#third").html(`Precision   : ${d3.format('.2%')(precision)} <br/>`);
 
+  // F1-score
+  var f1_score = 2* (tp_count(val,slider_input1))/(2* (tp_count(val,slider_input1)) +  fp_count(val,slider_input1) + fn_count(val,slider_input1));
+  d3.select("#fourth").html(`F1-score   : ${d3.format('.2%')(f1_score)} <br/>`);
+  
+  // Number of Alerts
+  var number_alerts2 = alerts_count(val,slider_input1);
+  d3.select("#fifth").html(`Number of Alerts   : ${(number_alerts2)} <br/>`);
+
+  //Number of SARs
+  var num_sar = count_sar(val,slider_input1);
+  d3.select("#sar").html(`Number of SAR's  : ${(num_sar)} <br/>`);
+   //Number of SARs
+   var num_no_sar = count_no_sar(val,slider_input1);
+  d3.select("#no_sar").html(`Number of Non-SAR's  : ${(num_no_sar)} <br/>`);
+  
+   });//brackets close for onchange callback fn
+
+console.log(data.RATIO_NUM_MT103_12M);
 var gStep2 = d3
 .select('div#slider-step2')
 .append('svg')
@@ -412,7 +648,27 @@ path2.attr('fill', 'none')
   .attr('stroke-width', '2')
   .attr('d', threshold2(points2))
   ; 
+
+
+
+//fp rate
+//var fp_rate = 
+/* var indices = slider_bins.forEach((currentValue,index)=>{
+  return index;
 });
+ */
+
+var slider_bins = (data.map(item => item.RATIO_NUM_MT103_12M));
+
+console.log(slider_bins.indexOf(sliderStep.value()));
+console.log(sliderStep.value());
+console.log(data);
+//for (i = slider_bins.indexOf(sliderStep2.value()); i < slider_bins.indexOf(sliderStep.value()); i++) {
+
+
+});
+
+
 </script>
 
 
