@@ -17,7 +17,7 @@ body {
 
 .canvas {
       position: absolute;
-      left: 450px;
+      left: 400px;
       top: 50px;
       padding: 0;
       margin: 0;
@@ -41,13 +41,20 @@ body {
   .confusion {
       position: absolute;
       left:  1250px;
-      top: 350px;
+      top: 200px;
       padding: 0;
       margin: 0
       
   }
-  #first, #second,#third,#fourth,#fifth,#sar,#no_sar {
-    font-size:  20px;
+  #first, #second,#third,#fourth,#fifth,#sar,#no_sar,#f_sar,#f_no_sar {
+    font-size:  18px;
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    
+  }
+  #sensitivity, #specificity, #precision,#fscore {
+    font-size:  15px;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-style: oblique;
     
   }
 
@@ -89,6 +96,8 @@ h1 {
   -moz-border-radius: 15px;
   border-radius: 15px;
 }
+div .description {
+align-self: auto; }
 </style>
 <body>
   <div class="canvas">
@@ -102,32 +111,62 @@ h1 {
       <div class="col-sm-2" ><p id="value-step2"></p></div>
       <div class="col-sm"><div id="slider-step2"></div> </div> </div>
 <div class="confusion">
-<p id="sar">Number of SAR's   :  <br/></p> 
-<p id="no_sar"> Number of Non-SAR's : <br/></p> 
-<p id="first">Sensitivity/True Positive Rate   : 0% <br/></p> 
-<p id="second"> Specificity/ True Negative Rate : 0%<br/></p> 
-<p id="third"> Precision    :  0%<br/></p>
-<p id="fourth"> F1-score     :  0 % <br/></p>
-<p id="fifth"> Number of Alerts     :  0 % <br/></p>
+    <h3>Brief Analysis</h3>   
+<p id="sar">Number of SAR's   :  31<br/></p> 
+<p id="no_sar"> Number of Non-SAR's : 1643<br/></p> 
+<p id="fifth"> Number of Alerts     :  1674 <br/></p>
+<p id="f_sar"> Fraction of SAR's   :  1.85%<br/></p> 
+<p id="f_no_sar"> Fraction of Non-SAR's : 98.15% <br/></p> 
+<h3>Performance Metrics</h3>
+<p id="first">Sensitivity/True Positive Rate   : 67.74% <br/></p> 
+<p id="second"> Specificity/ True Negative Rate : 20.41%<br/></p> 
+<p id="third"> Precision    :  35.00%<br/></p>
+<p id="fourth"> F1-score     :  46.15% <br/></p>
+<div class="description"> <h3>Performance Metrics of Machine Learning used:</h3>
+  <p id="sensitivity">Sensitivity: Sensitivity or True Positive Rate is the extent to which actual positives are not overlooked (so false negatives are few). It is defined as :
+
+      <img src="http://latex.codecogs.com/svg.latex?Sensitivity = TP/(TP+FN) = 1-FNR" border="1"/> </br>
+  
+  Thus a high sensitivity implies the model rarely overlooks an actual positive. </p>
+  <p id="specificity">Specificity: Specificity or True Negative Rate  is the extent to which actual negatives are classified as such (so false positives are few). 
+      <img src="http://latex.codecogs.com/svg.latex?Specificity = TN/(TN+FP) = 1-FPR" border="1"/> </br>
+    
+    Thus a high specificity implies the model rarely registers a positive classification for anything that is not suspicious/ not of interest.</p>
+  
+  <p id="precision">Precision: Precision or Positive Predictive Value is the fraction of actual positives among those predicted as positives by the model. It is defined as :
+  
+      <img src="http://latex.codecogs.com/svg.latex?Precision = TP/(TP+FP)" border="1"/> </br>
+    Thus a high precision indicates the precision with which the positive class / class of interest is predicted by the model is high.
+    </p>
+  
+  <p id="fscore">F1-score: It is the weighted average between precision and sensitivity. This score allows to weigh more on misclassification of one class over the other. In case of fraud/suspicious activity detection, one wants to make sure the model rarely overlooks an actual positive even if it is at the cost of having a few false positives.
+    As we have seen earlier that high sensitivity is related to low false positives and high precision to low false negatives, the F-score allows to weigh between sensitivity and precision. 
+    As it is required in the problem , this metric can also be tweaked further by using a generic Fβ, where β refers to the weight given to sensitivity over precision. F1-score has been used in the current case where β=1. F1-score is defined as : 
+    
+    <br><br>
+    <img src="http://latex.codecogs.com/svg.latex?F1-score = (2*TP/(2*TP+ FP+FN))" border="1"/> </br>
+  </p>
+  </div>
 
 </div>
 <script src="https://d3js.org/d3.v5.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"> </script>
 <script src="https://unpkg.com/d3-simple-slider"></script>
+<script type="text/javascript" src="http://latex.codecogs.com/latexit.js"></script>
 <script type= "text/javascript" > 
 
 
  // select the svg container first
 var svg = d3.select('.canvas')
   .append('svg')
-    .attr('width', 1020)
+    .attr('width', 1120)
     .attr('height', 1000);
 
 
 // create margins & dimensions
 var margin = {top: 20, right: 20, bottom: 100, left: 100};
-var graphWidth = 700 - margin.left - margin.right;
-var graphHeight = 700 - margin.top - margin.bottom;
+var graphWidth = 800 - margin.left - margin.right;
+var graphHeight = 800 - margin.top - margin.bottom;
 
 
 var graph = svg.append('g')
@@ -146,7 +185,8 @@ const yAxisGroup = graph.append('g');
  d3.csv("INT90.FI_for_viz.csv").then( data => {
  // Convert numeric variables to numeric 
  data.forEach(function(d) {
-    d.RATIO_NUM_MT103_12M    = +d.RATIO_NUM_MT103_12M;
+    d.RATIO_NUM_MT103_12M
+    = +d.RATIO_NUM_MT103_12M;
     d["pred_rf.SAR"] = +d["pred_rf.SAR"];
   });
 
@@ -390,7 +430,7 @@ var tooltip = d3.select("body").append("div")
                .duration(200)
                .style("opacity", 0.9);
           tooltip.html( `${d["SAR"]} <br/>(${xValue(d)}, ${yValue(d)})`)
-               .style("left", (d3.event.pageX -305) + "px")
+               .style("left", (d3.event.pageX ) + "px")
                .style("top", (d3.event.pageY -68) + "px");
       })
       .on("mouseout", function(d) {
@@ -436,18 +476,17 @@ svg.append("text")
  
 // text label for the y axis
 svg.append("text")
-.attr("transform", "rotate(-90)")
 .attr("transform",
-            "translate(" + (- 110) + " ," + 
-                           (margin.top + 80) + ")") 
+            "translate(" + (-80) + " ," + 
+                           (margin.top + 100) + ")")
+//.attr("transform", "rotate(-90)") 
 .attr("y", margin.left)
 .attr("x", (graphHeight/4))
-.attr("x", (graphHeight/4))
 .attr("dy", "1em")
-.style("text-anchor", "middle")
-.html(" Risk score &#8593;")
+.style("text-anchor", "end")
+.html("Predicted risk &#8593; ")
 ;  
-
+//
 
 xAxisGroup.call(xAxis);
 yAxisGroup.call(yAxis);
@@ -497,6 +536,8 @@ var sliderStep = d3.sliderBottom()
     [x(val), -800],
     ];
   path1.attr('d', threshold1(points))
+
+  
   //TP rate
   var tp_rate = tp_count(slider_input2,val)/(tp_count(slider_input2,val) + fn_count(slider_input2,val));
   d3.select("#first").html(`Sensitivity/True Positive Rate   : ${d3.format('.2%')(tp_rate)} <br/>`);
@@ -523,6 +564,13 @@ var sliderStep = d3.sliderBottom()
    //Number of SARs
    var num_no_sar = count_no_sar(slider_input2,val);
   d3.select("#no_sar").html(`Number of Non-SAR's  : ${(num_no_sar)} <br/>`);
+  //Ratio SAR
+  var ratio_sar = count_sar(slider_input2,val)/alerts_count(slider_input2,val);
+  d3.select("#f_sar").html(`Fraction of SAR's   :   ${d3.format('.2%')(ratio_sar)} <br/>`);
+  //Ratio no_SAR
+  var ratio_no_sar = count_no_sar(slider_input2,val)/alerts_count(slider_input2,val);
+  d3.select("#f_no_sar").html(`Fraction of Non-SAR's   :   ${d3.format('.2%')(ratio_no_sar)} <br/>`);
+
 
   });
 
@@ -604,6 +652,12 @@ var sliderStep2 = d3.sliderBottom()
    //Number of SARs
    var num_no_sar = count_no_sar(val,slider_input1);
   d3.select("#no_sar").html(`Number of Non-SAR's  : ${(num_no_sar)} <br/>`);
+   //Ratio SAR
+   var ratio_sar = count_sar(val,slider_input1)/alerts_count(val,slider_input1);
+  d3.select("#f_sar").html(`Fraction of SAR's   :   ${d3.format('.2%')(ratio_sar)} <br/>`);
+  //Ratio no_SAR
+  var ratio_no_sar = count_no_sar(val,slider_input1)/alerts_count(val,slider_input1);
+  d3.select("#f_no_sar").html(`Fraction of Non-SAR's   :   ${d3.format('.2%')(ratio_no_sar)} <br/>`);
   
    });//brackets close for onchange callback fn
 
