@@ -9,6 +9,7 @@
 <!-- Coding style based on http://gist.github.com/mbostock/5977197 -->
 
 <style>
+ 
 body {
   font: 11px sans-serif;
   background-color: darkgrey; 
@@ -72,6 +73,20 @@ h1 {
   stroke: #000;
 }
 
+#max_sar {
+  position: relative;
+  top: 200px;
+}
+
+#max_f1score {
+  position: relative;
+  top: 250px;
+}
+
+.button {
+  -webkit-transition-duration: 0.4s; /* Safari */
+  transition-duration: 0.4s;
+  }
 .tooltip {
   position: absolute;
   background-color: rgba(100,100,200,1) ;
@@ -99,6 +114,8 @@ h1 {
 div .description {
 align-self: auto; }
 </style>
+
+
 <body>
   <div class="canvas">
 
@@ -110,14 +127,36 @@ align-self: auto; }
       <div class="row-align-items-center2">
       <div class="col-sm-2" ><p id="value-step2"></p></div>
       <div class="col-sm"><div id="slider-step2"></div> </div> </div>
-<div class="confusion">
-    <h3>Brief Analysis</h3>   
+
+
+<!-- Max_Sar_button_paragraph-->
+      <p id="max_sar"> 
+ 
+              <input name="max_sar_button" 
+                     type="button" 
+                     value="click here to maximize fraction of SAR's" 
+                     onclick="max_sar_setting()" />
+
+ </p>
+
+ <!-- Max_Sar_button_paragraph-->
+ <p id="max_f1score"> 
+ 
+  <input name="max_f1score_button" 
+         type="button" 
+         value="click here to maximize F1-score (statistical metric)" 
+         onclick="max_f1score_setting()" />
+
+</p>
+
+      <div class="confusion">
+    <h3>Data Analysis in current threshold setting:</h3>  
 <p id="sar">Number of SAR's   :  31<br/></p> 
 <p id="no_sar"> Number of Non-SAR's : 1643<br/></p> 
 <p id="fifth"> Number of Alerts     :  1674 <br/></p>
 <p id="f_sar"> Fraction of SAR's   :  1.85%<br/></p> 
 <p id="f_no_sar"> Fraction of Non-SAR's : 98.15% <br/></p> 
-<h3>Performance Metrics</h3>
+<h3>Model performance in current threshold setting:</h3>
 <p id="first">Sensitivity/True Positive Rate   : 67.74% <br/></p> 
 <p id="second"> Specificity/ True Negative Rate : 20.41%<br/></p> 
 <p id="third"> Precision    :  35.00%<br/></p>
@@ -153,6 +192,7 @@ align-self: auto; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"> </script>
 <script src="https://unpkg.com/d3-simple-slider"></script>
 <script type="text/javascript" src="http://latex.codecogs.com/latexit.js"></script>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
 <script type= "text/javascript" > 
 
 
@@ -190,8 +230,13 @@ const yAxisGroup = graph.append('g');
     d["pred_rf.SAR"] = +d["pred_rf.SAR"];
   });
 
+colnames_data =Object.keys(data[0]);
+is_x_var = element => {return element === "RATIO_NUM_MT103_12M";} 
+  var x_index = colnames_data.findIndex(is_x_var);
 
-  console.log(data[0]);
+  console.log(x_index);
+
+  console.log(colnames_data[x_index]);
 // $$$$$$$ Definitions - global fns for rate of alerts 
 
 //tp_rate
@@ -316,7 +361,7 @@ function count_no_sar(left,right) {
 
 console.log(data.length);
 
-console.log(data[0].RATIO_NUM_MT103_12M );
+console.log(d3.min(data, d => d.RATIO_NUM_MT103_12M));
 console.log(data[data.length-1].RATIO_NUM_MT103_12M );
 console.log(alerts_count(-100,617));
 
@@ -331,6 +376,203 @@ console.log(tn_count(-30,100));
 console.log(data[29]);
 console.log(data.length);
 
+// On click functions- maximize fraction of SARs and F-score
+//var left_right_array = data.map( d=> d.RATIO_NUM_MT103_12M).sort();
+//1. Max_sar_setting function
+max_sar_setting = function() {
+  $('#img').show(); //<----here
+ 
+     
+
+  var array_frac_sars = [];
+  var left_array =[];
+  var right_array = [];
+  var left=d3.min(data, d => d.RATIO_NUM_MT103_12M);
+ //for (var i=0; i < left_right_array.length; i++) {
+  for (;left<=-30;left++){
+   for (var right=30;right <= d3.max(data, d => d.RATIO_NUM_MT103_12M);right++){
+      var i=0;
+      var frac_sar_temp= count_sar(left,right)/alerts_count(left,right);
+        array_frac_sars.push(frac_sar_temp);
+        left_array.push(left);
+        right_array.push(right);
+
+      } }
+    
+  // for (left >= d3.min(data, d => d.RATIO_NUM_MT103_12M) ; left <=30;left++) {
+  //   for (right>=30;right <= d3.max(data, d => d.RATIO_NUM_MT103_12M);right++ ){
+  
+
+max_sar_temp = Math.max.apply(Math,array_frac_sars);
+
+console.log(array_frac_sars);
+console.log(max_sar_temp);
+is_max = element => {return element === max_sar_temp;} //function to check if maximum
+index_max_sar= array_frac_sars.findIndex(is_max);
+console.log(index_max_sar);
+d3.select("#max_sar").html(`The optimal threshold setting for max % of SARs is at ${left_array[index_max_sar]} and ${right_array[index_max_sar]} `);
+
+//set all values with this threshold setting automatically! //////////////////////////////////////
+
+d3.select('p#value-step').text(`Positive (+) RATIO_NUM_MT103_12M :   ${d3.format('.2f')(right_array[index_max_sar])}`);
+  
+  points = [
+    [x(right_array[index_max_sar]), 800],
+    [x(right_array[index_max_sar]), -800],
+    ];
+  path1.attr('d', threshold1(points))
+
+  d3.select('p#value-step2').text(`Negative (-)   RATIO_NUM_MT103_12M :    ${d3.format('.2f')(left_array[index_max_sar])}`);
+  
+  points2 = [
+    [x(left_array[index_max_sar]), 800],
+    [x(left_array[index_max_sar]), -800],
+    ];
+  path2.attr('d', threshold2(points2))
+//TP rate
+var tp_rate = tp_count(left_array[index_max_sar],right_array[index_max_sar])/(tp_count(left_array[index_max_sar],right_array[index_max_sar]) + fn_count(left_array[index_max_sar],right_array[index_max_sar]));
+  d3.select("#first").html(`Sensitivity/True Positive Rate   : ${d3.format('.2%')(tp_rate)} <br/>`);
+  
+  // TN rate
+  var tn_rate = tn_count(left_array[index_max_sar],right_array[index_max_sar])/(tn_count(left_array[index_max_sar],right_array[index_max_sar]) + fp_count(left_array[index_max_sar],right_array[index_max_sar]));
+  d3.select("#second").html(`Specificity/True Negative Rate   : ${d3.format('.2%')(tn_rate)} <br/>`);
+
+  // Precision
+  var precision = tp_count(left_array[index_max_sar],right_array[index_max_sar])/(tp_count(left_array[index_max_sar],right_array[index_max_sar]) + fp_count(left_array[index_max_sar],right_array[index_max_sar]));
+  d3.select("#third").html(`Precision   : ${d3.format('.2%')(precision)} <br/>`);
+
+  // F1-score
+  var f1_score = 2* (tp_count(left_array[index_max_sar],right_array[index_max_sar]))/(2* (tp_count(left_array[index_max_sar],right_array[index_max_sar])) +  fp_count(left_array[index_max_sar],right_array[index_max_sar]) + fn_count(left_array[index_max_sar],right_array[index_max_sar]));
+  d3.select("#fourth").html(`F1-score   : ${d3.format('.2%')(f1_score)} <br/>`);
+
+  //Number of Alerts
+  var number_alerts1 = alerts_count(left_array[index_max_sar],right_array[index_max_sar]);
+  d3.select("#fifth").html(`Number of Alerts   : ${(number_alerts1)} <br/>`);
+  
+  //Number of SARs
+   var num_sar = count_sar(left_array[index_max_sar],right_array[index_max_sar]);
+  d3.select("#sar").html(`Number of SAR's  : ${(num_sar)} <br/>`);
+   //Number of SARs
+   var num_no_sar = count_no_sar(left_array[index_max_sar],right_array[index_max_sar]);
+  d3.select("#no_sar").html(`Number of Non-SAR's  : ${(num_no_sar)} <br/>`);
+  //Ratio SAR
+  var ratio_sar = count_sar(left_array[index_max_sar],right_array[index_max_sar])/alerts_count(left_array[index_max_sar],right_array[index_max_sar]);
+  d3.select("#f_sar").html(`Fraction of SAR's   :   ${d3.format('.2%')(ratio_sar)} <br/>`);
+  //Ratio no_SAR
+  var ratio_no_sar = count_no_sar(left_array[index_max_sar],right_array[index_max_sar])/alerts_count(left_array[index_max_sar],right_array[index_max_sar]);
+  d3.select("#f_no_sar").html(`Fraction of Non-SAR's   :   ${d3.format('.2%')(ratio_no_sar)} <br/>`);
+   $('#img').hide();  //<--- hide again
+   
+
+}; //end of function 1- Max_sar_setting
+
+
+
+//2. Max_f1score_setting function
+max_f1score_setting = function() {
+  $('#img').show(); //<----here
+ 
+     
+
+  var array_f1scores = [];
+  var left_array =[];
+  var right_array = [];
+  
+ //for (var i=0; i < left_right_array.length; i++) {
+  var left=d3.min(data, d => d.RATIO_NUM_MT103_12M);
+   for (;left<=-30;left++){
+   for (var right=30;right <= d3.max(data, d => d.RATIO_NUM_MT103_12M);right++){
+      var i=0;
+      var frac_f1score_temp= 2* ((tp_count(left,right))/(2* (tp_count(left,right)) +  fp_count(left,right) + fn_count(left,right)));
+        array_f1scores.push(frac_f1score_temp);
+        left_array.push(left);
+        right_array.push(right);
+
+      } }
+console.log(array_f1scores);
+      console.log(array_f1scores.map(a => a = a || 0));
+      var array_f1scores_imputed = array_f1scores.map(a => a = a || 0);
+
+     
+        console.log(array_f1scores_imputed);
+        //console.log(fp_count(-91.1,428.9)); 
+
+  // for (left >= d3.min(data, d => d.RATIO_NUM_MT103_12M) ; left <=30;left++) {
+  //   for (right>=30;right <= d3.max(data, d => d.RATIO_NUM_MT103_12M);right++ ){
+
+max_f1score_temp = Math.max.apply(Math,array_f1scores_imputed);
+
+console.log(max_f1score_temp);
+
+console.log(left_array);
+is_max = element => {return element === max_f1score_temp;} //function to check if maximum
+index_max_f1score= array_f1scores_imputed.findIndex(is_max);
+console.log(index_max_f1score);
+d3.select("#max_f1score").html(`The optimal threshold setting for max F1-score is at ${left_array[index_max_f1score]} and ${right_array[index_max_f1score]}`);
+
+//set all values with this threshold setting automatically! //////////////////////////////////////
+
+d3.select('p#value-step').text(`Positive (+) RATIO_NUM_MT103_12M :   ${d3.format('.2f')(right_array[index_max_f1score])}`);
+  
+  points = [
+    [x(right_array[index_max_f1score]), 800],
+    [x(right_array[index_max_f1score]), -800],
+    ];
+  path1.attr('d', threshold1(points))
+
+d3.select('p#value-step2').text(`Negative (-)   RATIO_NUM_MT103_12M :    ${d3.format('.2f')(left_array[index_max_f1score])}`);
+  
+  points2 = [
+    [x(left_array[index_max_f1score]), 800],
+    [x(left_array[index_max_f1score]), -800],
+    ];
+  path2.attr('d', threshold2(points2))
+//TP rate
+var tp_rate = tp_count(left_array[index_max_f1score],right_array[index_max_f1score])/(tp_count(left_array[index_max_f1score],right_array[index_max_f1score]) + fn_count(left_array[index_max_f1score],right_array[index_max_f1score]));
+  d3.select("#first").html(`Sensitivity/True Positive Rate   : ${d3.format('.2%')(tp_rate)} <br/>`);
+  
+  // TN rate
+  var tn_rate = tn_count(left_array[index_max_f1score],right_array[index_max_f1score])/(tn_count(left_array[index_max_f1score],right_array[index_max_f1score]) + fp_count(left_array[index_max_f1score],right_array[index_max_f1score]));
+  d3.select("#second").html(`Specificity/True Negative Rate   : ${d3.format('.2%')(tn_rate)} <br/>`);
+
+  // Precision
+  var precision = tp_count(left_array[index_max_f1score],right_array[index_max_f1score])/(tp_count(left_array[index_max_f1score],right_array[index_max_f1score]) + fp_count(left_array[index_max_f1score],right_array[index_max_f1score]));
+  d3.select("#third").html(`Precision   : ${d3.format('.2%')(precision)} <br/>`);
+
+  // F1-score
+  var f1_score = 2* (tp_count(left_array[index_max_f1score],right_array[index_max_f1score]))/(2* (tp_count(left_array[index_max_f1score],right_array[index_max_f1score])) +  fp_count(left_array[index_max_f1score],right_array[index_max_f1score]) + fn_count(left_array[index_max_f1score],right_array[index_max_f1score]));
+  d3.select("#fourth").html(`F1-score   : ${d3.format('.2%')(f1_score)} <br/>`);
+
+  //Number of Alerts
+  var number_alerts1 = alerts_count(left_array[index_max_f1score],right_array[index_max_f1score]);
+  d3.select("#fifth").html(`Number of Alerts   : ${(number_alerts1)} <br/>`);
+  
+  //Number of SARs
+   var num_sar = count_sar(left_array[index_max_f1score],right_array[index_max_f1score]);
+  d3.select("#sar").html(`Number of SAR's  : ${(num_sar)} <br/>`);
+   //Number of SARs
+   var num_no_sar = count_no_sar(left_array[index_max_f1score],right_array[index_max_f1score]);
+  d3.select("#no_sar").html(`Number of Non-SAR's  : ${(num_no_sar)} <br/>`);
+  //Ratio SAR
+  var ratio_sar = count_sar(left_array[index_max_f1score],right_array[index_max_f1score])/alerts_count(left_array[index_max_f1score],right_array[index_max_f1score]);
+  d3.select("#f_sar").html(`Fraction of SAR's   :   ${d3.format('.2%')(ratio_sar)} <br/>`);
+  //Ratio no_SAR
+  var ratio_no_sar = count_no_sar(left_array[index_max_f1score],right_array[index_max_f1score])/alerts_count(left_array[index_max_f1score],right_array[index_max_f1score]);
+  d3.select("#f_no_sar").html(`Fraction of Non-SAR's   :   ${d3.format('.2%')(ratio_no_sar)} <br/>`);
+   $('#img').hide();  //<--- hide again
+   
+
+}; //end of function 2- Max_f1score_setting
+
+
+
+
+
+
+  
+
+
+  
 
 
 
@@ -461,7 +703,7 @@ var tooltip = d3.select("body").append("div")
       .attr("dy", ".35em")
       .style("text-anchor", "end")
       .text(function(d) { return d;}) */
-  
+console.log(d3.entries(data));
 
 // text label for the x axis
 svg.append("text")   
@@ -470,7 +712,7 @@ svg.append("text")
                            (graphHeight + margin.top +50) + ")")         
  .style("text-anchor", "middle")
  .attr("dy", "0em")
- .html(" &#8594; The value of RATIO_NUM_MT103_12M  ")
+ .html(`&#8594; The value of ${colnames_data[x_index]}  `)
 
  
  
@@ -501,8 +743,8 @@ var slider_input1= 30;
 
 
 //console.log(slider_bins); 
-d3.select('p#value-step').text(`Positive (+) RATIO_NUM_MT103_12M :   30`); //default value
-d3.select('p#value-step2').text(`Negative (-) RATIO_NUM_MT103_12M :   -30`); //default value
+d3.select('p#value-step').text(`Positive (+) ${colnames_data[x_index]} :   30`); //default value
+d3.select('p#value-step2').text(`Negative (-) ${colnames_data[x_index]} :   -30`); //default value
 //default position of threshold1 : +30
 var points = [
   [x(30), 800],
@@ -624,7 +866,7 @@ var sliderStep2 = d3.sliderBottom()
     [x(val), 800],
     [x(val), -800],
     ];
-  path2.attr('d', threshold1(points2))
+  path2.attr('d', threshold2(points2))
 
   //TP rate
   var tp_rate = tp_count(val,slider_input1)/(tp_count(val,slider_input1) + fn_count(val,slider_input1));
@@ -718,8 +960,8 @@ console.log(slider_bins.indexOf(sliderStep.value()));
 console.log(sliderStep.value());
 console.log(data);
 //for (i = slider_bins.indexOf(sliderStep2.value()); i < slider_bins.indexOf(sliderStep.value()); i++) {
-
-
+/* console.log(left_right_array);
+  console.log(left_right_array.findIndex(element=> element == 30.4)); */
 });
 
 
