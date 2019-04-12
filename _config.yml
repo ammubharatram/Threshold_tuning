@@ -7,3 +7,6 @@ theme: jekyll-theme-slate
  - jemoji
  - jekyll-mentions
  - jekyll-include-cache
+
+future: true
+timezone: TIMEZONE
