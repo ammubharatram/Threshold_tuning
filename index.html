@@ -7,9 +7,14 @@
 <!-- Example based on https://bl.ocks.org/mbostock/3887118 -->
 <!-- Tooltip example from https://www.d3noob.org/2013/01/adding-tooltips-to-d3js-graph.html -->
 <!-- Coding style based on https://gist.github.com/mbostock/5977197 -->
-
+<!-- Add icon library -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <style>
- 
+
+.none {
+  display :none;
+}
+
 body {
   font: 11px sans-serif;
   background-color: darkgrey; 
@@ -83,10 +88,29 @@ h1 {
   top: 250px;
 }
 
-.button {
-  -webkit-transition-duration: 0.4s; /* Safari */
-  transition-duration: 0.4s;
+#sar_button, #f1_button {
+   background-color: blue; /* Green */
+  border : none;
+  border-radius:50px;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  -webkit-transition-duration: 0.2s; /* Safari */
+  transition-duration: 0.2s;
   }
+
+#img:{
+  display:none;
+}
+
+#sar_button:hover,#f1_button:hover {
+  background-color: #4CAF50; /* Green */
+  color: white;
+}
+
 .tooltip {
   position: absolute;
   background-color: rgba(100,100,200,1) ;
@@ -117,6 +141,7 @@ align-self: auto; }
 
 
 <body>
+ 
   <div class="canvas">
 
   </div>
@@ -132,19 +157,20 @@ align-self: auto; }
 <!-- Max_Sar_button_paragraph-->
       <p id="max_sar"> 
  
-              <input name="max_sar_button" 
-                     type="button" 
-                     value="click here to maximize fraction of SAR's" 
-                     onclick="max_sar_setting()" />
-
+  <input name="max_sar_button"   type="button" 
+                     value="Get threshold to maximize SAR's and minimize non-SAR's" 
+                     id="sar_button"
+                     /> 
+       <!--  <img src="C:\Users\BharatRamAmmu\OneDrive - mc2bis\Mc2bis\Bharat Work\VA Tuning- JS D3\Scatterplot Threshold Tuning\loading.gif" id="img" style="display:none"/ > --> 
  </p>
 
- <!-- Max_Sar_button_paragraph-->
+ <!-- Max_f1score_button_paragraph-->
  <p id="max_f1score"> 
  
   <input name="max_f1score_button" 
          type="button" 
          value="click here to maximize F1-score (statistical metric)" 
+         id="f1_button"
          onclick="max_f1score_setting()" />
 
 </p>
@@ -377,13 +403,13 @@ console.log(data[29]);
 console.log(data.length);
 
 // On click functions- maximize fraction of SARs and F-score
+
+
+
 //var left_right_array = data.map( d=> d.RATIO_NUM_MT103_12M).sort();
 //1. Max_sar_setting function
-max_sar_setting = function() {
-  $('#img').show(); //<----here
- 
-     
-
+/* $("#sar_button").click( function(e) {
+ e.preventDefault();
   var array_frac_sars = [];
   var left_array =[];
   var right_array = [];
@@ -461,17 +487,139 @@ var tp_rate = tp_count(left_array[index_max_sar],right_array[index_max_sar])/(tp
   //Ratio no_SAR
   var ratio_no_sar = count_no_sar(left_array[index_max_sar],right_array[index_max_sar])/alerts_count(left_array[index_max_sar],right_array[index_max_sar]);
   d3.select("#f_no_sar").html(`Fraction of Non-SAR's   :   ${d3.format('.2%')(ratio_no_sar)} <br/>`);
-   $('#img').hide();  //<--- hide again
+  
    
 
-}; //end of function 1- Max_sar_setting
+       $('#img').hide();  //<--- hide again
+ 
+}); */
+//end of function 1- Max_sar_setting 
 
+
+
+
+//1b. Max_sar_setting function : maximize SAR and minimize count_no_sar
+$("#sar_button").click( function(e) {
+ e.preventDefault();
+  var array_count_sars = [];
+  var array_count_no_sars = [];
+  var left_array =[];
+  var right_array = [];
+  var left=d3.min(data, d => d.RATIO_NUM_MT103_12M);
+ //for (var i=0; i < left_right_array.length; i++) {
+  for (;left<=-30;left++){
+   for (var right=30;right <= d3.max(data, d => d.RATIO_NUM_MT103_12M);right++){
+      var i=0;
+      var count_sar_temp= count_sar(left,right)//count of SAR's 
+      var count_no_sar_temp = count_no_sar(left,right);
+        array_count_sars.push(count_sar_temp);
+        array_count_no_sars.push(count_no_sar_temp);
+        left_array.push(left);
+        right_array.push(right);
+
+      } }
+ 
+  // for (left >= d3.min(data, d => d.RATIO_NUM_MT103_12M) ; left <=30;left++) {
+  //   for (right>=30;right <= d3.max(data, d => d.RATIO_NUM_MT103_12M);right++ ){
+// total no of SARs is 31 
+
+
+ function all_indices_95(arr) {
+    var indexes = [], i;
+    for(i = 0; i < arr.length; i++)
+        if (arr[i] > 0.95*Math.max.apply(Math,arr)) // take those combos with at least 95% of all SAR's in their interval
+            indexes.push(i);
+    return indexes;
+}
+console.log(array_count_sars.length);
+var indices_95 = all_indices_95(array_count_sars);
+console.log(indices_95);
+
+var array_check_no_sars = indices_95.map(i => array_count_no_sars[i]);
+
+min_no_sar_temp = Math.min.apply(Math,array_check_no_sars);
+console.log(min_no_sar_temp);
+console.log(indices_95.map(i => array_count_no_sars[i]));
+
+max_sar_temp = Math.max.apply(Math,array_count_sars);
+//min_no_sar_temp = Math.min.apply(Math,array_frac_no_sars);
+console.log(array_count_sars);
+//console.log(array_frac_no_sars);
+console.log(max_sar_temp);
+//console.log(min_no_sar_temp);
+
+is_max_sar_min_no_sar= element=> {return element == min_no_sar_temp ;} //function to check if maximum SAR's and minimum no_sars
+
+
+is_max = element => {return element === max_sar_temp;} //function to check if maximum
+
+index_max_sar_min_no_sar = array_count_no_sars.findIndex(is_max_sar_min_no_sar);
+console.log(index_max_sar_min_no_sar);
+index_max_sar= array_count_sars.findIndex(is_max);
+console.log(index_max_sar);
+d3.select("#max_sar").html(`The optimal threshold setting for max % of SARs is at ${left_array[index_max_sar_min_no_sar]} and ${right_array[index_max_sar_min_no_sar]} `);
+
+//set all values with this threshold setting automatically! //////////////////////////////////////
+
+d3.select('p#value-step').text(`Positive (+) RATIO_NUM_MT103_12M :   ${d3.format('.2f')(right_array[index_max_sar_min_no_sar])}`);
+  
+  points = [
+    [x(right_array[index_max_sar_min_no_sar]), 800],
+    [x(right_array[index_max_sar_min_no_sar]), -800],
+    ];
+  path1.attr('d', threshold1(points))
+
+  d3.select('p#value-step2').text(`Negative (-)   RATIO_NUM_MT103_12M :    ${d3.format('.2f')(left_array[index_max_sar_min_no_sar])}`);
+  
+  points2 = [
+    [x(left_array[index_max_sar_min_no_sar]), 800],
+    [x(left_array[index_max_sar_min_no_sar]), -800],
+    ];
+  path2.attr('d', threshold2(points2))
+//TP rate
+var tp_rate = tp_count(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar])/(tp_count(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar]) + fn_count(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar]));
+  d3.select("#first").html(`Sensitivity/True Positive Rate   : ${d3.format('.2%')(tp_rate)} <br/>`);
+  
+  // TN rate
+  var tn_rate = tn_count(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar])/(tn_count(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar]) + fp_count(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar]));
+  d3.select("#second").html(`Specificity/True Negative Rate   : ${d3.format('.2%')(tn_rate)} <br/>`);
+
+  // Precision
+  var precision = tp_count(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar])/(tp_count(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar]) + fp_count(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar]));
+  d3.select("#third").html(`Precision   : ${d3.format('.2%')(precision)} <br/>`);
+
+  // F1-score
+  var f1_score = 2* (tp_count(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar]))/(2* (tp_count(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar])) +  fp_count(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar]) + fn_count(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar]));
+  d3.select("#fourth").html(`F1-score   : ${d3.format('.2%')(f1_score)} <br/>`);
+
+  //Number of Alerts
+  var number_alerts1 = alerts_count(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar]);
+  d3.select("#fifth").html(`Number of Alerts   : ${(number_alerts1)} <br/>`);
+  
+  //Number of SARs
+   var num_sar = count_sar(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar]);
+  d3.select("#sar").html(`Number of SAR's  : ${(num_sar)} <br/>`);
+   //Number of SARs
+   var num_no_sar = count_no_sar(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar]);
+  d3.select("#no_sar").html(`Number of Non-SAR's  : ${(num_no_sar)} <br/>`);
+  //Ratio SAR
+  var ratio_sar = count_sar(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar])/alerts_count(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar]);
+  d3.select("#f_sar").html(`Fraction of SAR's   :   ${d3.format('.2%')(ratio_sar)} <br/>`);
+  //Ratio no_SAR
+  var ratio_no_sar = count_no_sar(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar])/alerts_count(left_array[index_max_sar_min_no_sar],right_array[index_max_sar_min_no_sar]);
+  d3.select("#f_no_sar").html(`Fraction of Non-SAR's   :   ${d3.format('.2%')(ratio_no_sar)} <br/>`);
+  
+   
+
+       $('#img').hide();  //<--- hide again
+ 
+}); //end of function 1- Max_sar_setting
 
 
 //2. Max_f1score_setting function
 max_f1score_setting = function() {
   $('#img').show(); //<----here
- 
+  $('#f1_button').attr('display','none');
      
 
   var array_f1scores = [];
@@ -641,7 +789,7 @@ const color = d3.scaleOrdinal(["green","red"])
 // add the tooltip area to the webpage
 var tooltip = d3.select("body").append("div")
     .attr("class", "tooltip")
-    .style("opacity", 12);
+    .style("opacity", 10);
   // change string (from CSV) into number format
   data.forEach(function(d) {
     d.RATIO_NUM_MT103_12M = +d.RATIO_NUM_MT103_12M;
@@ -964,7 +1112,18 @@ console.log(data);
   console.log(left_right_array.findIndex(element=> element == 30.4)); */
 });
 
-
+function all_indices_95(arr) {
+    var indexes = [], i;
+    for(i = 0; i < arr.length; i++)
+        if (arr[i] > 0.95*Math.max.apply(Math,arr)) // take those combos with at least 95% of all SAR's in their interval
+            indexes.push(i);
+    return indexes;
+}
+array_random = [0.1,0.4,0.5,0.6];
+console.log(Math.max.apply(Math,array_random));
+console.log(array_random.length);
+var indices_95 = all_indices_95(array_random);
+console.log(indices_95);
 </script>
 
 
